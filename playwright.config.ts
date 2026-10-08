@@ -1,0 +1,3 @@
+import { defineConfig } from '@playwright/test';
+import { browserPath } from './tests/browser-path';
+export default defineConfig({testDir:'./tests',testMatch:'**/*.spec.ts',timeout:45000,expect:{timeout:20000},workers:1,fullyParallel:false,reporter:[['list'],['json',{outputFile:'artifacts/tests.json'}],['html',{outputFolder:'artifacts/playwright-report',open:'never'}]],use:{baseURL:'http://127.0.0.1:5173',viewport:{width:1440,height:1000},launchOptions:{executablePath:browserPath()},trace:'retain-on-failure',screenshot:'only-on-failure'},webServer:{command:'npm.cmd run dev -- --port 5173 --strictPort',url:'http://127.0.0.1:5173',reuseExistingServer:true}});

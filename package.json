@@ -1,0 +1,21 @@
+{
+  "name": "spider-inspector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "test": "npm run build && playwright test",
+    "test:unit": "node --experimental-strip-types --test tests/math.test.ts",
+    "package": "node scripts/package.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/chrome": "^0.1.37",
+    "@types/node": "^24.0.0",
+    "axe-core": "^4.11.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}
