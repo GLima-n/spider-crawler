@@ -20,6 +20,7 @@ export class DOMInspector {
       for(const r of records) {
         if(r.target===host||host.contains(r.target)) continue;
         if(r.target instanceof Element) this.queue(r.target);
+        else if(r.target.parentElement)this.queue(r.target.parentElement);
         for(const n of r.addedNodes) if(n instanceof Element) this.queue(n);
       }
       this.geometryDirty=true;
@@ -48,6 +49,7 @@ export class DOMInspector {
     }
     for(const el of this.dirty) {
       if(performance.now()-start>5) break;
+      if(this.walker)break;
       this.dirty.delete(el); this.consider(el);
       // Bounded subtree walker; continue in subsequent ticks for large insertions.
       if(!this.walker&&el.isConnected) this.walker=document.createTreeWalker(el,NodeFilter.SHOW_ELEMENT);
@@ -57,6 +59,7 @@ export class DOMInspector {
   refresh() {
     for(const c of this.candidates) {
       c.rect=rectOf(c.el.getBoundingClientRect());
+      const cs=getComputedStyle(c.el);if(cs.visibility==='hidden'||cs.display==='none'){c.rect.width=0;c.rect.height=0;}
       if(!c.manual) Object.assign(c,classify(c.el));
     }
     this.geometryDirty=false;
