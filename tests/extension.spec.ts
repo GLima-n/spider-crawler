@@ -23,7 +23,8 @@ test('real MV3 package: service worker, popup, isolated injection, strict CSP an
     const popup=await context.newPage();await popup.goto(`chrome-extension://${id}/popup.html`);
     await page.bringToFront();await popup.reload();
     await expect(popup.locator('#status')).toContainText('Pronto');
-    await popup.addScriptTag({content:axe.source});
+    // DevTools evaluation is test-only; production CSP continues rejecting inline scripts.
+    await popup.evaluate(axe.source);
     const accessibility=await popup.evaluate(async()=>await (window as any).axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa']}}));
     await writeFile('artifacts/popup-accessibility.json',JSON.stringify(accessibility.violations,null,2));
     expect(accessibility.violations).toEqual([]);
