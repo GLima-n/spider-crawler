@@ -8,7 +8,7 @@
 - Viewport principal: 1440 × 1000 CSS px.
 - `npm.cmd run build`: **aprovado**, TypeScript strict e três bundles Vite.
 - `npm.cmd run test:unit`: **2 aprovados**, nenhum ignorado.
-- Última execução de `npm.cmd test`: **9 aprovados**, nenhum ignorado, aproximadamente 1,1 minuto.
+- Última execução de `npm.cmd test` após o redesign: **11 aprovados**, nenhum ignorado, aproximadamente 1,2 minuto.
 - Relatório estruturado: `artifacts/tests.json`; HTML: `artifacts/playwright-report/index.html`.
 
 ## Cobertura executada
@@ -17,6 +17,9 @@
 |---|---|---|
 | IK alcançável | Comprimentos de ambos os segmentos em 48 direções e dois lados de joelho | Passou |
 | IK degenerado | Ponto coincidente e alvo inalcançável, sem NaN | Passou |
+| Aparência claro/escuro | Oito patas mantidas; corpo escuro no laboratório claro e claro na área escura; capturas do motor real | Passou |
+| Histerese e pausa | Tom intermediário preserva o tema; limiares trocam o tema; três aranhas e amostragem congelada durante pausa | Passou |
+| Console no laboratório | Nenhum erro de página ou console além do recurso quebrado intencional | Passou |
 | Pacote MV3 | Service worker, popup real, duas aranhas, injeção isolada, pausa/recolhimento | Passou |
 | CSP/rede/permissões | Página com `default-src 'none'`; zero novas requisições durante sessão; manifesto sem host permissions | Passou |
 | Acessibilidade do popup | axe-core, regras com tags WCAG 2 A e AA; zero violações encontradas | Passou |
@@ -31,7 +34,7 @@
 | Auditoria complementar | Conteúdo horizontalmente fora da viewport, controle encoberto, Canvas genérico não tratado como gráfico | Passou |
 | DOM grande | 3.000 parágrafos adicionais, teto de 600 componentes e efeitos/teias limitados | Passou |
 
-Algumas linhas pertencem ao mesmo cenário Playwright; são nove cenários, não quinze testes independentes.
+Algumas linhas pertencem ao mesmo cenário Playwright; são onze cenários, não dezoito testes independentes.
 O teste do painel captura uma referência ao ShadowRoot fechado apenas na instrumentação da demonstração.
 O código de produção mantém o Shadow DOM fechado; o teste MV3 valida a injeção no mundo isolado.
 
@@ -39,12 +42,16 @@ O código de produção mantém o Shadow DOM fechado; o teste MV3 valida a inje�
 
 | Cenário | Frames na amostra | FPS observado | Trabalho médio de JS por frame |
 |---|---:|---:|---:|
-| 3 aranhas, reduced motion, demonstração | 192 | 60,43 | 0,60 ms |
-| 3 aranhas, intensidade intensa, +3.000 nós, 600 componentes amostrados | 305 | 59,48 | 0,99 ms |
+| Antes: 3 aranhas, intensidade intensa, +3.000 nós | 305 | 59,48 | 0,99 ms |
+| Redesign: 3 aranhas, reduced motion, demonstração | 190 | 60,00 | 0,74 ms |
+| Redesign: 3 aranhas, intensidade intensa, +3.000 nós, 600 componentes | 297 | 58,41 | 1,16 ms |
 
 Arquivos brutos: `artifacts/performance.json` e `artifacts/performance-large.json`.
 São amostras curtas de headless nesta máquina, sem equivalência a um benchmark universal.
 O custo medido é o trabalho JavaScript do frame; não inclui todo o custo de composição/pintura da GPU.
+No cenário grande, a diferença de 0,17 ms por frame é pequena em termos absolutos;
+os FPS continuam próximos de 60 nesta amostra curta. A variação entre execuções
+e dispositivos exige validação adicional antes de concluir equivalência universal.
 
 ## Falhas encontradas e corrigidas
 
@@ -58,6 +65,9 @@ O custo medido é o trabalho JavaScript do frame; não inclui todo o custo de co
    Não foi adicionada autorização de inline/eval à extensão.
 6. Vite tentou examinar o HTML de distribuição do popup como entrada de desenvolvimento;
    `optimizeDeps.entries` foi limitado à demonstração.
+7. O laboratório gerava erro 404 para o favicon e apontava a ilustração para uma
+   pasta incorreta; ambos os caminhos foram corrigidos. A imagem quebrada da
+   seção de auditoria permanece intencional e é excluída do teste de console.
 
 ## Limite do teste automatizado de activeTab
 
@@ -90,6 +100,8 @@ Nenhuma instalação no perfil pessoal do usuário foi realizada. Execute o rote
 11. No popup, mude para Auditar e libere novamente. Role até as falhas intencionais;
     confirme evidências e graus de certeza, sem submissão automática.
 12. Teste duas/três aranhas; alterne de aba; teste zoom, rolagem e redução de movimento do sistema.
+    Visite a seção escura do laboratório: confirme corpo claro, duas luzes nos olhos
+    e retorno ao corpo escuro em superfícies claras.
 13. Em `chrome://version` e na loja de extensões, confirme a mensagem de incompatibilidade.
 14. Em um site autorizado com layout diferente, repita os passos 4–10. Não interprete ausência
     de achados como prova de ausência de problemas.
@@ -105,6 +117,8 @@ Nenhuma instalação no perfil pessoal do usuário foi realizada. Execute o rote
 - `artifacts/report-example.json`: JSON produzido pela exportação do produto.
 - `artifacts/popup-accessibility.json`: zero violações do axe-core no escopo executado.
 - `artifacts/extension-validation.json`: permissões, isolamento e verificação de rede.
+- `artifacts/spider-redesign-light.png` e `artifacts/spider-redesign-dark.png`:
+  personagem real sobre duas superfícies, capturado em resolução dupla.
 
 ## Etapas entregues
 
@@ -115,4 +129,4 @@ Nenhuma instalação no perfil pessoal do usuário foi realizada. Execute o rote
 | 3 — Interações | Texto, botão, card, gráfico e teias; demais tipos com reações próprias | Reconstrução visual mais fiel de superfícies e distorção de pixels |
 | 4 — Inspeção | Classificação, painel, correção manual, dados reais, JSON/resumo | Frames, Shadow DOM de terceiros, paginação da amostra |
 | 5 — Auditoria | Verificações passivas, evidências e marcadores | Acessibilidade completa, auditoria ativa e console da página |
-| 6 — Validação | 9 cenários Playwright, 2 testes IK, axe-core, capturas e métricas | Matriz ampla de sites e teste manual do gesto na barra do Chrome |
+| 6 — Validação | 11 cenários Playwright, 2 testes IK, axe-core, capturas e métricas | Matriz ampla de sites, Opera GX e teste manual do gesto na barra do Chrome |

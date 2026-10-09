@@ -1,6 +1,7 @@
 import { clamp, distance, mix, nearest, solveIK } from '../../shared/math';
 import { DOMInspector, type Anchor } from '../../inspection/dom';
 import type { Candidate, Point, SpiderContact, SpiderState } from '../../types';
+import { SpiderAppearance } from '../appearance';
 interface Leg { side:number; pair:number; foot:Point; knee:Point; from:Point; anchor:Anchor; phase:number; stepping:boolean; hip:Point }
 export class Spider {
   position:Point;
@@ -18,12 +19,16 @@ export class Spider {
   private stride=0;
   private forced?:Candidate;
   private touchedPoint?:Point;
+  readonly appearance=new SpiderAppearance();
   constructor(public id:string,private dom:DOMInspector,private onContact:(c:SpiderContact,a:Anchor,spider:Spider)=>void,private onInspect:(c:Candidate,s:Spider)=>void,private reduced=false,index=0) {
     this.position={x:Math.min(innerWidth-80,120+index*110),y:Math.min(innerHeight-80,180+index*80)};
     for(let i=0;i<8;i++) {const side=i<4?-1:1,pair=i%4,foot=this.rest(side,pair);this.legs.push({side,pair,foot,knee:{...foot},from:{...foot},anchor:{point:foot},phase:0,stepping:false,hip:{...this.position}});}
   }
   private rest(side:number,pair:number):Point {
-    const angle=this.heading+side*([.52,1.12,1.98,2.62][pair]);
+    // Keep the eight-leg silhouette lateral as the body turns toward waypoints.
+    // The existing plant/step/IK mechanics still move these same foot targets.
+    const pose=Math.PI/2+Math.sin(this.heading-Math.PI/2)*.22;
+    const angle=pose+side*([.52,1.12,1.98,2.62][pair]);
     const reach=[58,53,53,64][pair];
     return {x:this.position.x+Math.cos(angle)*reach,y:this.position.y+Math.sin(angle)*reach};
   }
@@ -91,6 +96,7 @@ export class Spider {
       }
       const ik=solveIK(leg.hip,leg.foot,40,46,(leg.pair===3?-1:1)*leg.side);leg.knee=ik.knee;
     }
+    this.appearance.update(dt,this.position,this.reduced);
   }
   private plant(index:number,leg:Leg) {
     const c=leg.anchor.candidate;if(!c)return;
@@ -99,22 +105,12 @@ export class Spider {
   }
   get contactPoint() {return this.touchedPoint||this.position;}
   draw(ctx:CanvasRenderingContext2D) {
-    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-    for(const leg of this.legs) {
-      const ik=solveIK(leg.hip,leg.foot,40,46,(leg.pair===3?-1:1)*leg.side);
-      ctx.strokeStyle='#12293b';ctx.lineWidth=3.6;ctx.beginPath();ctx.moveTo(leg.hip.x,leg.hip.y);ctx.lineTo(ik.knee.x,ik.knee.y);ctx.lineTo(ik.tip.x,ik.tip.y);ctx.stroke();
-      ctx.strokeStyle='#7bcefa';ctx.lineWidth=1.35;ctx.stroke();
-      ctx.fillStyle=leg.stepping?'#ffb9cb':'#ff648c';
-      for(const p of [ik.knee,ik.tip]){ctx.beginPath();ctx.arc(p.x,p.y,2,0,Math.PI*2);ctx.fill();}
-      if(!leg.stepping){ctx.fillStyle='#66b9ff20';ctx.beginPath();ctx.ellipse(ik.tip.x,ik.tip.y+2,4,2,0,0,Math.PI*2);ctx.fill();}
-    }
-    ctx.translate(this.position.x,this.position.y+(this.reduced?0:Math.sin(this.time*7)*1.1));ctx.rotate(this.heading);
-    ctx.fillStyle='#172c4be6';ctx.strokeStyle='#bbdfff';ctx.lineWidth=1.2;
-    ctx.beginPath();ctx.ellipse(-12+Math.sin(this.time*3)*1.1,0,12,7.5,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.ellipse(3,0,9,5.5,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.strokeStyle='#729de9';for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(-20+i*5,-4);ctx.lineTo(-17+i*5,4);ctx.stroke();}
-    ctx.strokeStyle='#a6dfff';for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(9,side*3);ctx.lineTo(16,side*(7+Math.sin(this.time*4)));ctx.lineTo(20,side*4);ctx.stroke();ctx.fillStyle='#ff648c';ctx.beginPath();ctx.arc(10,side*2.8,1.8,0,Math.PI*2);ctx.fill();}
-    ctx.restore();
+    this.appearance.draw(ctx,this.position,this.heading,
+      this.legs.map(leg=>({hip:leg.hip,knee:leg.knee,
+        tip:solveIK(leg.hip,leg.foot,40,46,(leg.pair===3?-1:1)*leg.side).tip,
+        side:leg.side,pair:leg.pair,stepping:leg.stepping})),this.state,this.time,this.reduced);
   }
-  snapshot() {return {id:this.id,state:this.state,position:{...this.position},steps:this.steps,travelled:this.travelled,target:this.target?.id,legs:this.legs.map(l=>({foot:{...l.foot},knee:{...l.knee},stepping:l.stepping}))};}
+  snapshot() {return {id:this.id,state:this.state,position:{...this.position},steps:this.steps,travelled:this.travelled,target:this.target?.id,
+    appearance:{theme:this.appearance.theme.mode,blend:this.appearance.theme.blend,luminance:this.appearance.theme.luminance,samples:this.appearance.theme.samples,switches:this.appearance.theme.switches},
+    legs:this.legs.map(l=>({foot:{...l.foot},knee:{...l.knee},stepping:l.stepping}))};}
 }

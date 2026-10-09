@@ -4,6 +4,11 @@ Extensão Chromium Manifest V3 para inspecionar interfaces com aranhas procedura
 Oito patas articuladas, apoios reais, reações locais, teias e auditoria passiva.
 Interface em português brasileiro. Todo processamento do produto é local.
 
+O redesign 2D/ASCII mantém o motor procedural: corpo compacto, rosto frontal com
+exatamente dois olhos, oito patas geométricas finas e cores que se ajustam à
+superfície sob a aranha. Veja as capturas de comparação em
+`artifacts/spider-redesign-light.png` e `artifacts/spider-redesign-dark.png`.
+
 ## Instalar no Google Chrome — Windows
 
 1. Abra `chrome://extensions` no Chrome.
@@ -16,6 +21,18 @@ Interface em português brasileiro. Todo processamento do produto é local.
 Não selecione a raiz do repositório: o código compilado está em `dist`.
 O ZIP, quando disponível em `artifacts/spider-inspector-0.1.0.zip`, precisa ser extraído primeiro.
 Não há publicação na Chrome Web Store nem instalação automática no seu perfil pessoal.
+
+## Atualizar no Opera GX — Windows
+
+Execute `npm.cmd run build` no projeto. Abra `opera://extensions`, ative **Modo do
+desenvolvedor** e clique em **Recarregar** no cartão da extensão carregada sem
+compactação a partir desta mesma pasta `dist`. Recarregue também a aba em inspeção
+antes de liberar as aranhas novamente, para remover o script antigo da página.
+
+Se ainda não estiver instalada no Opera GX, use **Carregar extensão sem compactação**
+na mesma tela e selecione `dist`, a pasta que contém `manifest.json`.
+Uma cópia extraída do ZIP deve ser atualizada no mesmo diretório de instalação
+antes de usar **Recarregar**. [Instruções oficiais da Opera](https://help.opera.com/en/extensions/testing/).
 
 ## Usar
 
@@ -48,6 +65,8 @@ Os botões da demonstração executam o mesmo motor na página para facilitar de
 Para validar a extensão, use o ícone do Chrome e não esses botões; evite duas sessões simultâneas.
 
 A página contém texto, botões, cards, SVG, Canvas, tabela, formulário, menu e imagem local.
+A seção **Outra superfície, a mesma curiosidade** permite conferir a aparência clara
+da aranha sobre fundo escuro; as demais seções usam fundo claro.
 As falhas deliberadas estão na seção **Pistas para a auditoria**: imagem quebrada/sem alt,
 botão sem nome, campo sem label, link de fragmento inexistente, contraste baixo e controle encoberto.
 Um campo de senha de teste serve para verificar a minimização do relatório.

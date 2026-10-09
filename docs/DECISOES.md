@@ -40,6 +40,7 @@ separação entre renderização e leituras de layout. Componentes copiados: **n
 | `src/inspection/audit` | Verificações passivas com evidências e grau de certeza |
 | `src/effects` e `src/effects/web` | Reações por componente, fios e teias |
 | `src/overlay` | Canvas de viewport dentro de Shadow DOM fechado |
+| `src/spider/appearance` | Silhueta 2D, pele das oito patas e tema cromático local |
 
 Vite gera um IIFE autocontido para injeção e módulos ES para popup/service worker.
 Sem framework, código remoto, content script automático ou dependência de runtime externa.
@@ -47,6 +48,20 @@ O painel é lateral dentro do overlay, dispensando a permissão `sidePanel`.
 Somente a área do painel recebe ponteiro; Canvas e restante do overlay deixam cliques passar.
 
 ## Movimento e inspeção
+
+O redesign de outubro de 2026 mantém `solveIK`, máquina de estados e apoios existentes.
+`Spider.draw` delega a pintura ao módulo de aparência, usando os joelhos e pés calculados
+pelo motor. O descanso lateral das patas recebe uma inclinação limitada pela direção,
+para preservar a silhueta frontal durante curvas; nenhum contato é simulado pela arte.
+O corpo permanece quase frontal, com leve inclinação ao caminhar ou investigar.
+
+O contraste é estimado pelo elemento sob o corpo e seus ancestrais, compondo cores CSS
+sólidas e transparências. São feitas no máximo cerca de 4–5 amostras por segundo e por
+aranha, fora da rotina de pintura. Luminância abaixo de 0,36 seleciona corpo claro;
+acima de 0,64 seleciona corpo escuro; entre esses valores, o tema anterior permanece.
+As cores interpolam por frame. Gradientes, imagens de fundo, vídeo e outros valores
+indeterminados preservam o último tema conhecido; contornos duplos mantêm a silhueta.
+Não há leitura de pixels da página nem transmissão de dados.
 
 `IDLE → TARGETING → WALKING → APPROACHING → TOUCHING → [WEBBING] → INSPECTING → REPORTING → RESTING`.
 
