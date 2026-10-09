@@ -1,5 +1,32 @@
 # Relatório de validação — 08/10/2026
 
+## Correção de silhueta e proporções
+
+A correção visual foi verificada primeiro em `preview/isolated.html`, com a mesma
+rotina de desenho Canvas e o `solveIK` do projeto. A captura
+`artifacts/preview-isolada-projecao.png` registra as versões clara e escura.
+Depois da integração, `artifacts/spider-redesign-light.png` e
+`artifacts/spider-redesign-dark.png` foram capturadas com a aranha caminhando
+na demonstração. As duas poses foram comparadas à imagem aprovada: o corpo
+está maior, o rosto não é mais um visor separado e as oito patas livres
+descrevem arcos laterais. A semelhança continua limitada por uma simplificação
+vetorial da arte original, descrita em `docs/REDESIGN.md`.
+
+O motor de IK, os comprimentos, os passos e os eventos de contato não foram
+alterados. A pele recebe apenas a indicação de pata ancorada para interpolar
+o desenho até o ponto real de contato.
+
+Na versão com interpolação e otimização de quadro, `npm.cmd test` executou
+**11/11 cenários Playwright** e `npm.cmd run test:unit` executou **2/2 testes
+de IK**. A última mudança apenas restaurou as cores discretas de estado;
+TypeScript compilou e os cenários de aparência e produto foram repetidos.
+Em Chromium headless, com três aranhas, intensidade Intensa e 3.000 nós
+adicionais, a amostra registrou **59,45 FPS** e **1,63 ms** médios de trabalho
+JavaScript por quadro. O custo médio do desenho anterior na mesma classe de
+cenário foi 1,16 ms; a nova curva e projeção visual acrescentam custo, embora
+o FPS observado permaneça próximo de 60 nesta máquina. As medidas não incluem
+todo o custo de pintura/composição e não substituem teste em hardware variado.
+
 ## Ambiente e resultado
 
 - Windows, Node.js `24.14.0`, npm `11.9.0`.

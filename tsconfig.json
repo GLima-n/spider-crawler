@@ -5,5 +5,5 @@
     "strict": true, "noEmit": true, "skipLibCheck": true,
     "types": ["chrome", "node"], "allowImportingTsExtensions": true
   },
-  "include": ["src", "tests", "playwright.config.ts"]
+  "include": ["src", "tests", "preview", "playwright.config.ts"]
 }

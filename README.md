@@ -7,7 +7,10 @@ Interface em português brasileiro. Todo processamento do produto é local.
 O redesign 2D/ASCII mantém o motor procedural: corpo compacto, rosto frontal com
 exatamente dois olhos, oito patas geométricas finas e cores que se ajustam à
 superfície sob a aranha. Veja as capturas de comparação em
-`artifacts/spider-redesign-light.png` e `artifacts/spider-redesign-dark.png`.
+`artifacts/preview-isolada-projecao.png`, `artifacts/spider-redesign-light.png`
+e `artifacts/spider-redesign-dark.png`. A pose lateral das patas livres é
+somente visual; os contatos em componentes mantêm as coordenadas reais.
+Detalhes da comparação estão em `docs/REDESIGN.md`.
 
 ## Instalar no Google Chrome — Windows
 

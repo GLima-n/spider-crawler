@@ -1,38 +1,49 @@
-# Redesign 2D/ASCII — validação visual
+# Correção visual 2D/ASCII — 08/10/2026
 
-Direção: imagem `Concepção Visual do Spider Crawler.png` fornecida pelo usuário.
-Somente o personagem foi traduzido para o Canvas. A imagem não foi copiada para o
-produto, e seus painéis, textos e cenários não fazem parte da extensão.
+A imagem `Concepção Visual do Spider Crawler.png`, fornecida pelo usuário, orientou
+somente o personagem. A primeira versão tinha corpo pequeno e patas retas que
+pareciam antenas. Esta correção foi desenhada e comparada primeiro em uma prévia
+isolada, feita com o Canvas e o mesmo `solveIK` do projeto, antes de entrar na
+extensão.
 
-## Mudanças
+## Comparação visual
 
-- `src/spider/appearance/index.ts`: corpo arredondado, cabeça frontal, dois olhos,
-  oito patas com segmentos finos, articulações e pixels discretos; cores por estado.
-- `src/spider/appearance/surface.ts`: estimativa de cor local, composição alfa,
-  limiares com histerese e transição gradual. Sem leitura de estilos por frame.
-- `src/spider/engine/index.ts`: renderização delegada, postura lateral limitada;
-  apoios, passos, contatos e IK existentes continuam no motor.
-- `index.html` e `src/demo.css`: nova área escura no laboratório para comparação.
-- `tests/appearance.spec.ts`: adaptação claro/escuro, oito patas, histerese,
-  pausa e capturas em resolução dupla.
-- `README.md`, `docs/DECISOES.md`, `docs/TESTES.md`: orientações e resultados.
+| Prévia isolada clara e escura | Extensão em superfície clara | Extensão em superfície escura |
+|---|---|---|
+| ![Prévia isolada](../artifacts/preview-isolada-projecao.png) | ![Runtime claro](../artifacts/spider-redesign-light.png) | ![Runtime escuro](../artifacts/spider-redesign-dark.png) |
 
-Checkpoint anterior: tag Git `pre-visual-redesign-2026-10-08` (commit `6f2a47e`).
+Em relação à referência aprovada: corpo arredondado e compacto, rosto integrado
+com apenas dois olhos, oito patas finas com joelho e curvatura, postura lateral
+mais baixa e poucos pixels de brilho. A figura ainda é uma tradução vetorial
+simplificada da arte, especialmente no tratamento das patas e dos detalhes do
+casco. As capturas da extensão mostram poses reais durante a caminhada e a
+aproximação de componentes; por isso variam da pose neutra da prévia.
 
-## Capturas do motor real
+## Implementação
 
-| Fundo claro | Fundo escuro |
-|---|---|
-| ![Aranha com corpo escuro no laboratório claro](../artifacts/spider-redesign-light.png) | ![Aranha com corpo claro na superfície escura](../artifacts/spider-redesign-dark.png) |
+- `preview/isolated.html`, `preview/isolated.ts` e `preview/capture.mjs`:
+  laboratório reproduzível com os mesmos comprimentos de segmentos e solução IK.
+  Com `npm.cmd run dev` ativo, abra `http://127.0.0.1:5173/preview/isolated.html`;
+  `node preview/capture.mjs` grava a captura em `artifacts` no Windows.
+- `src/spider/appearance/shape.ts`: desenho Canvas 2D, contornos suaves e
+  pequenos detalhes geométricos. A pose lateral das patas livres é uma projeção
+  **somente visual** dos joelhos e pés reais. A projeção muda com os movimentos
+  do IK; patas ancoradas em componentes transitam para o pé real antes do
+  contato, mantendo o desenho alinhado ao efeito.
+- `src/spider/appearance/index.ts`: pele desacoplada do controlador de movimento.
+- `src/spider/engine/index.ts`: passa à pele apenas se a pata está ancorada.
+  Nenhum alvo, comprimento, equação IK, tempo de passo ou reação foi alterado.
+- `src/spider/appearance/surface.ts`: contraste local com histerese e transição
+  gradual da revisão anterior, preservado sem novas leituras por quadro.
 
-As capturas foram tiradas durante a execução da aranha no laboratório, não de um mock.
-A aparência usa traços vetoriais no Canvas e mantém legibilidade em tamanhos pequenos.
+Checkpoint anterior à correção: commit `ecc8ae1`. A referência e os painéis
+da arte não são distribuídos com a extensão.
 
-## Limites
+## Limitações
 
-Cor de fundo proveniente de imagem, vídeo ou gradiente não pode ser inferida com
-precisão por estilos computados; o último tema confiável é mantido. Os contornos
-permanecem visíveis, mas não garantem contraste em qualquer composição de pixels.
-O rosto permanece frontal durante curvas para preservar os olhos e a silhueta.
-O comportamento visual no Opera GX depende da versão instalada; a validação
-automatizada desta entrega usa Chromium de Playwright.
+A projeção visual das patas livres não coincide necessariamente com a posição
+interna de apoio calculada pelo motor. A transição para o contato é interpolada,
+mas uma diferença breve ainda pode surgir quando o alvo muda muito rápido.
+Fundos baseados em imagem, vídeo ou gradiente não permitem inferência
+confiável de luminância por estilos computados. O gesto `activeTab` no perfil
+pessoal do Chrome e o Opera GX requerem validação manual.
