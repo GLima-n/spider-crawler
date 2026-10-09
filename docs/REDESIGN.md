@@ -1,4 +1,36 @@
-# Correção visual 2D/ASCII — 08/10/2026
+# Aparência B aprovada — 09/10/2026
+
+A opção **B** recebeu aprovação visual do usuário na comparação A/B/C.
+O renderer aprovado foi integrado sem modificar a lógica de exploração,
+auditoria, planejamento dos passos ou solver IK.
+
+- Abdômen elevado com contorno escalonado e sombras em blocos; face escura
+  nos dois temas; exatamente dois olhos azuis, sem boca.
+- Oito patas feitas de polígonos preenchidos, contornos, facetas, articulações
+  e extremidades curtas. A deformação das peças acompanha o esqueleto existente.
+- `src/spider/appearance/shape.ts` contém a arte aprovada;
+  `preview/reference-skin.ts` apenas a reexporta para impedir divergência.
+- `src/spider/appearance/index.ts` usa a fase real do passo para levar a ponta
+  visual ao contato. O único acréscimo ao motor é passar `leg.phase` ao desenho.
+- `preview/comparison.html` compara A (imagem), B (renderer aprovado) e C
+  (`preview/previous-integrated-shape.ts`, cópia da pele anterior à aprovação).
+- O teste de prévia usa o motor real e alvos sintéticos explícitos; não representa
+  uma auditoria de site. Há capturas neutras claras/escuras e caminhada em
+  `artifacts/visual-compare-*.png`.
+
+O contraste local com histerese foi preservado. A pose livre usa projeção visual,
+portanto não é uma simulação física tridimensional. Nos contatos, a ponta é
+alinhada ao IK; alvos fora da silhueta neutra podem exigir uma postura estendida.
+A vista lateral do laboratório é aproximada, não uma segunda ilustração lateral.
+A imagem de referência e as comparações não são incluídas no pacote `dist`.
+
+Para reproduzir: `npm.cmd run dev`, abra `/preview/comparison.html`. Com o servidor
+na porta 5174, execute `node preview/capture-comparison.mjs`. Para outra porta,
+defina `PREVIEW_URL` com a origem local do servidor antes de executar o comando.
+
+## Histórico da correção anterior — 08/10/2026
+
+O restante deste documento registra a versão anterior, substituída pela opção B.
 
 A imagem `Concepção Visual do Spider Crawler.png`, fornecida pelo usuário, orientou
 somente o personagem. A primeira versão tinha corpo pequeno e patas retas que

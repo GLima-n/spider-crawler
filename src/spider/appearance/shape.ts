@@ -1,116 +1,161 @@
-// Canvas 2D skin using the movement engine's existing IK joints and foot contacts.
+import { solveIK } from '../../shared/math';
+
 type Point = { x: number; y: number };
-export type ShapeLeg = { hip: Point; knee: Point; tip: Point; side: number; pair: number; stepping: boolean; anchored?: boolean; contactBlend?: number };
-type RGB = [number, number, number];
-const HOME_ANGLES=[.52,1.12,1.98,2.62];
-const HOME_REACH=[58,53,53,64];
-const FREE_TIP_X=[56,72,72,58];
-const FREE_TIP_Y=[42,33,18,20];
-const FREE_KNEE_X=[39,51,53,41];
-const FREE_KNEE_Y=[-6,-13,-14,-8];
-const limited=(value:number,limit:number)=>Math.max(-limit,Math.min(limit,value));
+export type ArtLeg = { hip: Point; knee: Point; tip: Point; side: number; pair: number; stepping: boolean; anchored?: boolean; phase?: number };
+type Vertex = readonly [number, number];
+export type StudyLeg = ArtLeg & { contactWeight?: number };
 
-const ON_LIGHT = {
-  shell: [13, 27, 47], edge: [7, 17, 30],
-  rim: [130, 171, 207], limb: [25, 48, 76], glint: [215, 231, 249],
-  eyes: [42, 146, 253], accent: [64, 161, 255],
-} satisfies Record<string, RGB>;
-const ON_DARK = {
-  shell: [224, 239, 248], edge: [13, 28, 47],
-  rim: [124, 177, 208], limb: [212, 231, 244], glint: [255, 255, 255],
-  eyes: [19, 182, 240], accent: [78, 193, 252],
-} satisfies typeof ON_LIGHT;
+// Approved option B: hand-authored Canvas pieces driven by the existing skeleton.
+const shell = [
+  [-24, 9], [-29, 3], [-30, -7], [-28, -7], [-28, -18], [-25, -18],
+  [-25, -25], [-21, -25], [-21, -31], [-16, -31], [-16, -36], [-8, -36],
+  [-8, -38], [10, -38], [10, -36], [17, -36], [17, -32], [22, -32],
+  [22, -26], [26, -26], [26, -19], [29, -19], [29, -9], [31, -9],
+  [31, 2], [27, 2], [27, 10], [20, 16], [-18, 16],
+] as const;
+const face = [
+  [-24, 1], [-21, -5], [-16, -5], [-16, -8], [-8, -8], [-8, -10],
+  [9, -10], [9, -8], [16, -8], [16, -5], [22, -5], [25, 2], [25, 12],
+  [22, 12], [22, 19], [17, 23], [10, 23], [10, 25], [-10, 25],
+  [-10, 23], [-18, 23], [-23, 18], [-25, 11],
+] as const;
 
-function mix(a: RGB, b: RGB, n: number) {
-  const c = a.map((v, i) => Math.round(v + (b[i] - v) * n));
-  return `rgb(${c[0]} ${c[1]} ${c[2]})`;
+function polygon(ctx: CanvasRenderingContext2D, points: readonly Vertex[], color: string) {
+  ctx.beginPath(); ctx.moveTo(...points[0]);
+  for (let i = 1; i < points.length; i++) ctx.lineTo(...points[i]);
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
 }
-function palette(blend: number) {
-  const output: Record<keyof typeof ON_LIGHT, string> = {} as never;
-  for (const key of Object.keys(ON_LIGHT) as (keyof typeof ON_LIGHT)[])
-    output[key] = mix(ON_LIGHT[key], ON_DARK[key], blend);
-  return output;
+function mix(a: string, b: string, t: number) {
+  const channels = [1, 3, 5].map(i => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - t) + parseInt(b.slice(i, i + 2), 16) * t));
+  return `rgb(${channels.join(' ')})`;
 }
+function palette(t: number) {
+  return {
+    edge: '#040b12', deep: mix('#06111b', '#829bb0', t), shell: mix('#0b1822', '#dbe5ec', t),
+    mid: mix('#172735', '#edf3f6', t), shade: mix('#08111a', '#aec0cd', t),
+    light: mix('#40515f', '#fafcfd', t), rim: mix('#9cb2d7', '#ffffff', t),
+    blue: '#258efe', blueDim: '#235895', eyes: mix('#008dff', '#09bcf0', t),
+    limb: mix('#12202c', '#e5edf2', t), facet: mix('#2c3d49', '#fbfdff', t),
+  };
+}
+type Colors = ReturnType<typeof palette>;
 
-function curvedSegment(ctx: CanvasRenderingContext2D, a: Point, b: Point,
-  outward: number, upper: boolean, colors: ReturnType<typeof palette>) {
-  const dx = b.x - a.x, dy = b.y - a.y;
-  const control = { x: (a.x + b.x) / 2 + outward * (upper ? 8 : 6),
-    y: (a.y + b.y) / 2 + (upper ? 3 : 4) };
-  const path = () => {ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(control.x,control.y,b.x,b.y);};
-  path();ctx.lineWidth = upper ? 3.6 : 3;ctx.strokeStyle = colors.edge;ctx.stroke();
-  path();ctx.lineWidth = upper ? 2.1 : 1.7;ctx.strokeStyle = colors.limb;ctx.stroke();
-  if (upper) {
-    const start = {x:a.x+dx*.2+outward*.8,y:a.y+dy*.2-.8};
-    const end = {x:a.x+dx*.67+outward*.8,y:a.y+dy*.67-.8};
-    ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.quadraticCurveTo(control.x+outward*.4,control.y-.4,end.x,end.y);
-    ctx.lineWidth = 1;ctx.strokeStyle=colors.glint;ctx.stroke();
+function limb(ctx: CanvasRenderingContext2D, a: Point, b: Point, width: number, c: Colors, lower: boolean, side: number) {
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
+  if (length < .01) return;
+  ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(Math.atan2(b.y - a.y, b.x - a.x));
+  const w = width / 2, end = lower ? .5 : .78;
+  const bend = -side * (lower ? 2.8 : 1.1);
+  const piece = (vertices: readonly Vertex[], color: string) => polygon(ctx,
+    vertices.map(([x,y]) => [x, y + Math.sin(x/length*Math.PI)*bend] as const),color);
+  // Chamfered outlines and a bent center replace smooth rods. Both ends
+  // coincide with the supplied joints; no extra simulated articulation.
+  piece([[0,-w*.65],[2,-w],[length*.35,-w*1.05],[length*.58,-w*.82],
+    [length*.62,-w*.68],[length-2,-w*end],[length,-w*.15],[length,w*.15],[length-1,w*end],
+    [length*.63,w*.72],[length*.56,w],[length*.3,w*.91],[0,w*.55]], c.edge);
+  piece([[2,-w+.9],[length*.34,-w+.8],[length*.56,-w*.65],
+    [length-2,-w*end+.8],[length-1,0],[length*.6,w*.4],[length*.3,w*.51],[2,w*.2]], c.limb);
+  piece([[3,-w+1],[length*.34,-w+1],[length*.54,-w*.6],
+    [length*.51,-w*.1],[length*.31,-w*.38],[3,-w*.3]], c.facet);
+  // Interrupted edge light follows the side of the piece, not a central wire.
+  piece([[2,-w],[length*.22,-w],[length*.25,-w+.75],[3,-w+1.15]], c.rim);
+  if (lower) {
+    piece([[length*.55,-w*.83],[length*.65,-w*.67],[length*.63,w*.7],
+      [length*.56,w*.85]], c.edge);
+    piece([[length*.69,-w*.56],[length*.77,-w*.48],[length*.76,0],[length*.68,.3]], c.shade);
   }
+  ctx.restore();
+}
+function joint(ctx: CanvasRenderingContext2D, point: Point, c: Colors, radius = 3.2) {
+  ctx.save(); ctx.translate(point.x, point.y);
+  polygon(ctx, [[-radius,-1],[-1,-radius],[2,-radius],[radius,0],[2,radius],[-1,radius],[-radius,1]], c.edge);
+  polygon(ctx, [[-radius+.8,-1],[-1,-radius+.8],[1,-radius+.8],[.7,-.5],[-1,1],[-radius+.8,1]], c.facet);
+  ctx.restore();
 }
 
-export function drawCandidateSpider(ctx: CanvasRenderingContext2D, body: Point,
-  heading: number, legs: ShapeLeg[], state: string, time: number, reduced: boolean,
-  blend: number) {
-  const colors = palette(blend);
-  if (state==='REPORTING') colors.accent='#5bda9b';
-  else if (state==='TOUCHING'||state==='INSPECTING'||state==='WEBBING') colors.accent='#bd80ef';
-  ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
-  const pose=Math.PI/2+Math.sin(heading-Math.PI/2)*.22;
-  // The free-leg pose is visual only. Component anchors retain the actual IK
-  // foot position, so an interaction still originates at the real contact.
-  for (const leg of legs) {
-    const homeAngle=pose+leg.side*HOME_ANGLES[leg.pair];
-    const reach=HOME_REACH[leg.pair];
-    const dx=leg.tip.x-(body.x+Math.cos(homeAngle)*reach);
-    const dy=leg.tip.y-(body.y+Math.sin(homeAngle)*reach);
-    const freeTip={x:body.x+leg.side*FREE_TIP_X[leg.pair]+limited(dx*.28,12),
-      y:body.y+FREE_TIP_Y[leg.pair]+limited(dy*.2,9)};
-    const freeKnee={x:body.x+leg.side*FREE_KNEE_X[leg.pair]+limited((leg.knee.x-body.x)*.08,5),
-      y:body.y+FREE_KNEE_Y[leg.pair]+limited((leg.knee.y-body.y)*.08,5)};
-    const contactBlend=leg.contactBlend??(leg.anchored?1:0);
-    const knee={x:freeKnee.x+(leg.knee.x-freeKnee.x)*contactBlend,
-      y:freeKnee.y+(leg.knee.y-freeKnee.y)*contactBlend};
-    const tip={x:freeTip.x+(leg.tip.x-freeTip.x)*contactBlend,
-      y:freeTip.y+(leg.tip.y-freeTip.y)*contactBlend};
-    const outward=leg.side;
-    curvedSegment(ctx,leg.hip,knee,outward,true,colors);
-    curvedSegment(ctx,knee,tip,outward,false,colors);
-    ctx.fillStyle=colors.limb;ctx.strokeStyle=colors.edge;ctx.lineWidth=1;
-    ctx.beginPath();ctx.arc(knee.x,knee.y,1.45,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.arc(tip.x,tip.y,1,0,Math.PI*2);ctx.fill();
-    if (!leg.stepping) {
-      ctx.fillStyle=colors.accent;ctx.globalAlpha=.36;
-      ctx.fillRect(Math.round(tip.x-1),Math.round(tip.y+1),2,1);
-      ctx.globalAlpha=1;
-    }
+const homeAngles = [.52, 1.12, 1.98, 2.62], homeReach = [58, 53, 53, 64];
+const feet: readonly Vertex[] = [[41,38],[59,32],[65,18],[59,7]];
+const knees: readonly Vertex[] = [[33,8],[44,-3],[47,-14],[39,-22]];
+const roots: readonly Vertex[] = [[20,9],[24,0],[25,-10],[21,-18]];
+const limit = (n: number, bound: number) => Math.max(-bound, Math.min(bound, n));
+function project(body: Point, heading: number, leg: StudyLeg) {
+  const pose = Math.PI/2 + Math.sin(heading - Math.PI/2)*.22;
+  const angle = pose + leg.side * homeAngles[leg.pair];
+  const homeFoot = { x: body.x + Math.cos(angle)*homeReach[leg.pair], y: body.y + Math.sin(angle)*homeReach[leg.pair] };
+  const homeKnee = solveIK(leg.hip, homeFoot, 40, 46, (leg.pair===3?-1:1)*leg.side).knee;
+  const tip = { x: body.x + leg.side*feet[leg.pair][0] + limit((leg.tip.x-homeFoot.x)*.3,9),
+    y: body.y + feet[leg.pair][1] + limit((leg.tip.y-homeFoot.y)*.32,10) };
+  const knee = { x: body.x + leg.side*knees[leg.pair][0] + limit((leg.knee.x-homeKnee.x)*.2,5),
+    y: body.y + knees[leg.pair][1] + limit((leg.knee.y-homeKnee.y)*.2,5) };
+  // Match physical contact exactly. Only the aerial/rest presentation is
+  // projected into the reference's three-quarter silhouette, as in the MVP.
+  const t = leg.contactWeight ?? (leg.anchored ? 1 : 0);
+  return {
+    root: { x: body.x+leg.side*roots[leg.pair][0], y: body.y+roots[leg.pair][1] },
+    knee: { x: knee.x+(leg.knee.x-knee.x)*t, y: knee.y+(leg.knee.y-knee.y)*t },
+    tip: { x: tip.x+(leg.tip.x-tip.x)*t, y: tip.y+(leg.tip.y-tip.y)*t },
+  };
+}
+
+export function drawHighFidelitySpider(ctx: CanvasRenderingContext2D, body: Point,
+  heading: number, legs: StudyLeg[], state: string, time: number, reduced: boolean, blend: number) {
+  const c = palette(blend);
+  ctx.save();
+  // A restrained contact shadow sits behind all eight limbs.
+  ctx.fillStyle = blend > .5 ? '#00000055' : '#07131f20';
+  ctx.beginPath(); ctx.ellipse(body.x, body.y+30, 31, 6, 0, 0, Math.PI*2); ctx.fill();
+  for (const item of [...legs].sort((a,b)=>b.pair-a.pair)) {
+    const p = project(body, heading, item);
+    limb(ctx,p.root,p.knee,7.1,c,false,item.side);
+    limb(ctx,p.knee,p.tip,6.8,c,true,item.side);
+    joint(ctx,p.root,c,3.5); joint(ctx,p.knee,c);
+    ctx.fillStyle=c.edge;
+    ctx.fillRect(p.tip.x-1.05,p.tip.y-1.15,2.1,2.3);
   }
+  const bob = reduced ? 0 : Math.sin(time*5.3)*.45;
+  const tilt = reduced ? 0 : Math.cos(heading)*.04 + (state==='INSPECTING'?.025:0);
+  ctx.translate(body.x,body.y+bob); ctx.rotate(tilt);
 
-  const tilt=reduced?0:Math.cos(heading)*.08+(state==='INSPECTING'?.04:0);
-  const bob=reduced?0:Math.sin(time*5)*.5;
-  ctx.translate(body.x,body.y+bob);ctx.rotate(tilt);ctx.scale(1.18,1.02);
-  // A single rounded digital-creature silhouette: no visor or separate head.
-  ctx.beginPath();ctx.moveTo(-30,-2);ctx.lineTo(-30,-8);
-  ctx.quadraticCurveTo(-28,-28,-10,-31);ctx.lineTo(-6,-32);
-  ctx.quadraticCurveTo(0,-34,6,-32);ctx.lineTo(11,-31);
-  ctx.quadraticCurveTo(29,-27,30,-8);ctx.lineTo(30,2);
-  ctx.quadraticCurveTo(29,21,12,26);ctx.lineTo(8,27);
-  ctx.quadraticCurveTo(0,28,-8,27);ctx.lineTo(-12,26);
-  ctx.quadraticCurveTo(-29,21,-30,3);ctx.closePath();
-  ctx.fillStyle=colors.shell;ctx.fill();ctx.strokeStyle=colors.edge;ctx.lineWidth=3.4;ctx.stroke();
+  polygon(ctx,shell,c.edge);
+  ctx.save(); ctx.clip();
+  polygon(ctx,[[-27,6],[-27,-9],[-24,-24],[-18,-33],[-8,-36],[10,-36],[20,-30],[25,-19],[28,-5],[25,10]],c.shell);
+  // Broad pixel clusters form one domed abdomen, with an asymmetric light
+  // source at the upper left. No metallic plates or continuous round rim.
+  polygon(ctx,[[-27,-2],[-27,-13],[-24,-13],[-24,-22],[-20,-22],[-20,-29],[-15,-29],[-15,-33],[-6,-33],[-6,-35],[7,-35],[7,-30],[-2,-30],[-2,-26],[-10,-26],[-10,-20],[-17,-20],[-17,-9],[-20,-9],[-20,2]],c.mid);
+  polygon(ctx,[[-23,-19],[-23,-24],[-19,-24],[-19,-29],[-14,-29],[-14,-32],[-7,-32],[-7,-34],[5,-34],[5,-31],[-5,-31],[-5,-27],[-12,-27],[-12,-23],[-18,-23],[-18,-18]],c.light);
+  polygon(ctx,[[7,-32],[15,-31],[15,-27],[20,-27],[20,-21],[24,-21],[24,-11],[28,-11],[28,4],[23,9],[16,3],[19,-4],[16,-13],[11,-16],[11,-22],[5,-23]],c.shade);
+  polygon(ctx,[[-17,-14],[-10,-14],[-10,-19],[-3,-19],[-3,-24],[6,-24],[6,-20],[12,-20],[12,-15],[18,-15],[18,-8],[23,-8],[23,5],[-22,5]],c.deep);
+  // Irregular broken highlights are integral to the stepped outline.
+  polygon(ctx,[[-26,-8],[-26,-18],[-23,-18],[-23,-23],[-21,-23],[-21,-19],[-24,-19],[-24,-7]],c.rim);
+  polygon(ctx,[[-18,-30],[-14,-30],[-14,-34],[-7,-34],[-7,-36],[8,-36],[8,-34],[-6,-34],[-6,-32],[-13,-32],[-13,-28],[-18,-28]],c.rim);
+  polygon(ctx,[[21,-26],[24,-22],[24,-17],[27,-17],[27,-9],[25,-9],[25,-16],[22,-17]],c.rim);
+  ctx.restore();
 
-  // Sparse terminal-like glints soften the contour without mechanical panels.
-  ctx.strokeStyle=colors.rim;ctx.lineWidth=1.4;ctx.beginPath();
-  ctx.moveTo(-25,-13);ctx.quadraticCurveTo(-20,-28,-8,-29);ctx.lineTo(7,-29);ctx.stroke();
-  ctx.fillStyle=colors.glint;ctx.fillRect(-19,-26,3,2);ctx.fillRect(15,-24,2,2);
-  ctx.fillStyle=colors.accent;ctx.fillRect(-28,-9,2,2);ctx.fillRect(26,-7,2,2);
-  ctx.fillRect(-24,17,2,2);ctx.fillRect(22,16,2,2);
+  // The face remains navy on both backgrounds, integrated by overlap into
+  // the abdomen. Only two round blue eyes; no outline ring, mouth or smile.
+  polygon(ctx,face,'#040c15');
+  polygon(ctx,[[-23,0],[-18,-5],[-10,-7],[8,-7],[16,-5],[21,-1],[23,6],[21,17],[16,21],[-14,21],[-20,16],[-23,9]],'#07131e');
+  polygon(ctx,[[-22,7],[-20,15],[-16,19],[-8,21],[9,21],[17,18],[21,12],[20,19],[16,23],[9,23],[9,24],[-9,24],[-16,22],[-22,18],[-24,10]],'#08101b');
+  polygon(ctx,[[-25,0],[-23,0],[-23,11],[-20,16],[-20,20],[-23,18],[-26,10]],c.blueDim);
+  polygon(ctx,[[24,0],[26,1],[26,10],[24,15],[22,15],[24,9]],c.shade);
 
-  // Exactly two small points, embedded directly in the face.
-  ctx.fillStyle=colors.eyes;
-  for (const x of [-8,8]) {ctx.beginPath();ctx.arc(x,11,2.7,0,Math.PI*2);ctx.fill();}
-  if (state==='REPORTING'&&!reduced) {
-    ctx.globalAlpha=.35;ctx.fillStyle=colors.accent;
-    ctx.fillRect(-12,-36,2,2);ctx.fillRect(11,-35,2,2);
+  // Clustered square accents reproduce the reference's digital edge breakup.
+  const chips: readonly Vertex[] = [[-25,-25],[-22,-28],[-27,-15],[-29,-6],[-27,2],[-23,16],[23,-27],[27,-19],[29,-7]];
+  chips.forEach(([x,y],i)=>{
+    ctx.fillStyle=i%3===0?c.rim:i%3===1?c.blueDim:c.blue;
+    ctx.fillRect(x,y,i%2===0?2.1:1.5,i%3===0?2.3:1.7);
+  });
+  ctx.fillStyle=c.light; ctx.fillRect(-2,-30,4,1.5); ctx.fillRect(9,-27,3,1.7);
+  ctx.fillStyle=c.shade; ctx.fillRect(-15,-29,3,1.7); ctx.fillRect(5,-33,3.2,1.6);
+  ctx.fillStyle=c.rim; ctx.fillRect(-22,-24,1.8,2.5); ctx.fillRect(-25,-17,2,2);
+  ctx.fillStyle=c.blue; ctx.fillRect(-28,-11,1.5,3); ctx.fillRect(25,-15,1.6,2.2);
+  // Sparse static pixels, not random particles, retain legibility at 64px.
+  for (const [x,y] of [[-32,-22],[-30,-31],[30,-24],[33,-13],[-35,-8]] as const) {
+    ctx.fillStyle=c.blueDim; ctx.fillRect(x,y,1.2,1.2);
+  }
+  for (const x of [-9.4,9.4]) {
+    ctx.fillStyle='#087abb24'; ctx.beginPath(); ctx.arc(x,10,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=c.eyes; ctx.beginPath(); ctx.arc(x,10,3.05,0,Math.PI*2); ctx.fill();
   }
   ctx.restore();
 }

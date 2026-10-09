@@ -4,13 +4,17 @@ Extensão Chromium Manifest V3 para inspecionar interfaces com aranhas procedura
 Oito patas articuladas, apoios reais, reações locais, teias e auditoria passiva.
 Interface em português brasileiro. Todo processamento do produto é local.
 
-O redesign 2D/ASCII mantém o motor procedural: corpo compacto, rosto frontal com
-exatamente dois olhos, oito patas geométricas finas e cores que se ajustam à
-superfície sob a aranha. Veja as capturas de comparação em
-`artifacts/preview-isolada-projecao.png`, `artifacts/spider-redesign-light.png`
+O desenho B, aprovado na comparação visual, usa um abdômen elevado com sombras
+em blocos, face escura com dois olhos azuis e oito patas preenchidas e segmentadas.
+As cores se ajustam à superfície sob a aranha. Veja as capturas de comparação em
+`artifacts/visual-compare-neutral.png`, `artifacts/spider-redesign-light.png`
 e `artifacts/spider-redesign-dark.png`. A pose lateral das patas livres é
 somente visual; os contatos em componentes mantêm as coordenadas reais.
 Detalhes da comparação estão em `docs/REDESIGN.md`.
+
+Para comparar no navegador, execute `npm.cmd run dev` e abra
+`/preview/comparison.html` no endereço local indicado pelo Vite. O painel B usa
+o mesmo renderer da extensão; C preserva o desenho anterior.
 
 ## Instalar no Google Chrome — Windows
 

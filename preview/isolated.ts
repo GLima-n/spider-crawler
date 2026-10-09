@@ -1,5 +1,5 @@
 import { solveIK } from '../src/shared/math';
-import { drawCandidateSpider, type ShapeLeg } from '../src/spider/appearance/shape';
+import { drawHighFidelitySpider, type ArtLeg } from '../src/spider/appearance/shape';
 
 const light=document.querySelector<HTMLCanvasElement>('#light')!;
 const dark=document.querySelector<HTMLCanvasElement>('#dark')!;
@@ -13,7 +13,7 @@ function render(canvas:HTMLCanvasElement,blend:number,time:number) {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.fillStyle=blend?'#0a1322':'#f7f8f6';ctx.fillRect(0,0,canvas.width,canvas.height);
   const scale=2.55,body={x:canvas.width/2,y:canvas.height/2+5};
-  const legs:ShapeLeg[]=[];
+  const legs:ArtLeg[]=[];
   // Use the same eight home angles, hip offsets, and segment lengths as Spider.
   const heading=Math.PI/2;
   for(let i=0;i<8;i++) {
@@ -29,7 +29,7 @@ function render(canvas:HTMLCanvasElement,blend:number,time:number) {
     legs.push({hip,knee,tip,side,pair,stepping:lift>1});
   }
   ctx.save();ctx.translate(body.x,body.y);ctx.scale(scale,scale);
-  drawCandidateSpider(ctx,{x:0,y:0},heading,legs,'WALKING',time,false,blend);
+  drawHighFidelitySpider(ctx,{x:0,y:0},heading,legs,'WALKING',time,false,blend);
   ctx.restore();
 }
 function frame(now:number) {

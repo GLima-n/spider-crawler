@@ -1,4 +1,38 @@
-# Relatório de validação — 08/10/2026
+# Relatório de validação — 09/10/2026
+
+## Opção B aprovada e integrada
+
+Após aprovação visual do usuário, a pele B foi transferida da prévia para
+`src/spider/appearance/shape.ts`. O painel B agora importa esse mesmo renderer;
+o painel C usa uma cópia da versão anterior. A única alteração no motor foi
+expor a fase do passo para a interpolação visual, sem alterar as equações IK.
+
+Validação executada após a integração:
+
+- `npm.cmd test`: **11/11 cenários Playwright aprovados**, aproximadamente 1,2 min;
+  inclui a compilação TypeScript/Vite e a extensão MV3.
+- `npm.cmd run test:unit`: **2/2 testes IK aprovados**.
+- `node preview/capture-comparison.mjs`: oito patas, caminhada, contatos e
+  inspeção em movimento normal e reduzido, sem erros de página. Na amostra:
+  normal 34 passos/2 contatos/1 inspeção; reduzido 48 passos/2 contatos/1 inspeção.
+- Capturas da comparação e da extensão real revistas nos dois temas:
+  `visual-compare-neutral.png`, `visual-compare-neutral-dark.png`,
+  `visual-compare-walk-dark.png`, `spider-redesign-light.png` e
+  `spider-redesign-dark.png`, em `artifacts/`.
+- Três aranhas, intensidade intensa, 3.000 nós adicionais, 600 candidatos:
+  **59,33 FPS**, **3,69 ms** médios de trabalho JavaScript/quadro, 310 quadros.
+- Três aranhas com movimento reduzido: **60,02 FPS**, **2,82 ms/quadro**, 193 quadros.
+
+O custo de JavaScript ficou acima da medição histórica de 1,63 ms da pele
+anterior. O FPS permaneceu próximo de 60 nesta amostra, mas isso não prova
+equivalência de desempenho em outros dispositivos. Os testes foram feitos em
+Chromium headless; o Opera GX e o gesto activeTab no perfil pessoal ainda
+dependem do roteiro manual. A arte de referência não é incluída em `dist`.
+
+## Histórico — validação de 08/10/2026
+
+Os resultados abaixo pertencem às versões anteriores. Para a opção B, prevalecem
+os números e capturas descritos acima.
 
 ## Correção de silhueta e proporções
 

@@ -108,7 +108,7 @@ export class Spider {
     this.appearance.draw(ctx,this.position,this.heading,
       this.legs.map(leg=>({hip:leg.hip,knee:leg.knee,
         tip:solveIK(leg.hip,leg.foot,40,46,(leg.pair===3?-1:1)*leg.side).tip,
-        side:leg.side,pair:leg.pair,stepping:leg.stepping,
+        side:leg.side,pair:leg.pair,stepping:leg.stepping,phase:leg.phase,
         anchored:!!leg.anchor.candidate})),this.state,this.time,this.reduced);
   }
   snapshot() {return {id:this.id,state:this.state,position:{...this.position},steps:this.steps,travelled:this.travelled,target:this.target?.id,
