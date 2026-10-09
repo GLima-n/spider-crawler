@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spider Crawler — apresentação</title>
+<style>
+:root{color-scheme:dark;font-family:'Segoe UI',sans-serif;background:#07111b;color:#eef5f4}*{box-sizing:border-box}body{max-width:1280px;margin:0 auto;padding:38px 24px 50px}header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:25px}.brand{font:16px Consolas,monospace;letter-spacing:3px;color:#38c8f2}h1{font-size:clamp(28px,4vw,48px);letter-spacing:-1.5px;margin:24px 0 12px}p{color:#a1b6c4;line-height:1.65}video{display:block;width:100%;aspect-ratio:16/9;background:#060d15;border:1px solid #2c4455;border-radius:16px;margin-top:25px;box-shadow:0 25px 80px #0005}a{color:#82dcf1;text-underline-offset:4px}.chapters{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}button{font:14px Consolas,monospace;background:#132633;color:#daf0f4;border:1px solid #345164;border-radius:8px;padding:12px 16px;cursor:pointer}button:hover{background:#204052}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #38c8f2;outline-offset:4px}details{border-top:1px solid #243645;margin-top:24px;padding-top:20px}summary{cursor:pointer;font-weight:600}.meta{font:12px Consolas,monospace;letter-spacing:1px;color:#90abba}.links{display:flex;gap:24px;flex-wrap:wrap;margin:24px 0}ol{line-height:1.8;color:#b3c6d1}
+</style></head><body>
+<header><span class="brand">✳ SPIDER CRAWLER</span><span class="meta">36 SEGUNDOS · FULL HD · JAVASCRIPT</span></header>
+<h1>Sua interface. Sob outro olhar.</h1>
+<p>A aranha aprovada em movimento e o Spider Inspector funcionando no laboratório local.<br>Animação em JavaScript/JSX, capturas reais e trilha eletrônica original. Sem narração.</p>
+<video id="film" controls playsinline preload="metadata" poster="media/presentation-cover.png" aria-label="Vídeo de apresentação do Spider Crawler">
+<source src="media/spider-crawler.mp4" type="video/mp4">
+<track kind="captions" src="media/presentation.vtt" srclang="pt-BR" label="Português brasileiro">
+Seu navegador não reproduziu o vídeo. <a href="media/spider-crawler.mp4">Baixe o MP4.</a>
+</video>
+<nav class="chapters" aria-label="Capítulos"><button data-time="0">00:00 · Personagem</button><button data-time="6">00:06 · Explorar</button><button data-time="14">00:14 · Teias</button><button data-time="21">00:21 · Auditar</button><button data-time="29">00:29 · Começar</button></nav>
+<div class="links"><a href="media/spider-crawler.mp4" download>Baixar MP4</a><a href="../README.md">README</a><a href="GUIA.md">Guia de instalação</a></div>
+<details><summary>Transcrição e descrição do vídeo</summary><ol>
+<li><strong>00:00 — Sua interface. Sob outro olhar.</strong> A aranha B movimenta as oito patas sobre uma superfície clara. Inspeção visual e auditoria passiva no navegador.</li>
+<li><strong>00:06 — Cada toque, uma descoberta.</strong> Captura real: a aranha investiga um card no laboratório. O painel mostra componentes e informações coletadas.</li>
+<li><strong>00:14 — Uma teia de evidências.</strong> Captura real: uma teia surge sobre um gráfico SVG durante a inspeção da estrutura acessível.</li>
+<li><strong>00:21 — Encontre pistas. Entenda.</strong> Captura real de falhas intencionais: marcadores de auditoria, evidências e sugestões aparecem na interface.</li>
+<li><strong>00:29 — Libere a curiosidade.</strong> A aranha clara aparece sobre fundo escuro. Uma a três aranhas, modos Explorar e Auditar, pausa, exportação e recolhimento. Processamento local.</li>
+</ol><p>Os títulos são animações editoriais. As cenas de produto foram gravadas no laboratório com o mesmo motor da extensão; não mostram um site externo. A trilha não contém voz.</p></details>
+<script>const film=document.getElementById('film');document.querySelectorAll('[data-time]').forEach(button=>button.addEventListener('click',()=>{film.currentTime=Number(button.dataset.time);film.play().catch(()=>{});}));</script>
+</body></html>

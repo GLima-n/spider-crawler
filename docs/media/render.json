@@ -1,0 +1,17 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "durationSeconds": 36,
+  "codec": "h264",
+  "audio": "Original procedural score, no voiceover",
+  "engine": "Remotion 4.0.534",
+  "footage": "Real local laboratory, recorded with Playwright",
+  "stills": [
+    75,
+    300,
+    540,
+    795,
+    990
+  ]
+}
